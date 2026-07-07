@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+dist/
+.turbo/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local database files
+data/*.db
+data/*.db-shm
+data/*.db-wal
+prisma/*.db
+prisma/*.db-shm
+prisma/*.db-wal
+prisma/prisma/*.db
+prisma/prisma/*.db-shm
+prisma/prisma/*.db-wal
+
+# General logs and temp files
+*.log
+*.pid
+*.seed
+*.sqlite
+*.sqlite-journal
+tmp/
+temp/
+
+# Archives and packaged artifacts
+*.zip
+*.tar
+*.gz
+*.7z
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Coverage
+coverage/
+
+# Vercel
+.vercel/

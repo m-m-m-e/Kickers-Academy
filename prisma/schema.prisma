@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== HOME MODULE =====================
+
+model HeroSlide {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  image       String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AboutSection {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  image       String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ===================== PROGRAMS MODULE =====================
+
+model ProgramGroup {
+  id          String               @id @default(cuid())
+  slug        String               @unique
+  ageGroup    String
+  title       String
+  description String
+  image       String
+  featured    Boolean              @default(false)
+  subSections ProgramSubSection[]
+  order       Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model ProgramSubSection {
+  id             String        @id @default(cuid())
+  programGroupId String
+  programGroup   ProgramGroup  @relation(fields: [programGroupId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  order          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([programGroupId])
+}
+
+// ===================== NEWS & EVENTS MODULE =====================
+
+model NewsEvent {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  content     String?
+  image       String
+  kind        String   @default("news")
+  featured    Boolean  @default(false)
+  publishedAt DateTime
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ===================== GALLERY MODULE =====================
+
+model GalleryCategory {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  title       String
+  description String
+  image       String
+  featured    Boolean         @default(false)
+  items       GalleryMedia[]
+  order       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model GalleryMedia {
+  id         String          @id @default(cuid())
+  categoryId String
+  category   GalleryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title      String
+  description String
+  mediaType  String          @default("image")
+  src        String
+  thumbnail  String
+  order      Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([categoryId])
+}
+
+// ===================== STORE MODULE =====================
+
+model StoreCategory {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  description String
+  image       String
+  featured    Boolean        @default(false)
+  products    StoreProduct[]
+  order       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model StoreProduct {
+  id                  String        @id @default(cuid())
+  categoryId          String
+  category            StoreCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title               String
+  description         String
+  image               String
+  price               String
+  featured            Boolean       @default(false)
+  colorOptions        String        @default("")
+  sizeOptions         String        @default("")
+  supportsNumber      Boolean       @default(false)
+  supportsName        Boolean       @default(false)
+  supportsCustomMade  Boolean       @default(false)
+  order               Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@index([categoryId])
+}
+
+// ===================== FOOTER MODULE =====================
+
+model FooterContent {
+  id          String   @id @default(cuid())
+  brandName   String
+  badgeLabel  String
+  description String
+  location    String
+  email       String
+  whatsapp    String
+  phone       String
+  updatedAt   DateTime @updatedAt
+}
+
+model FooterLink {
+  id    String @id @default(cuid())
+  label String
+  href  String
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FooterSocial {
+  id    String @id @default(cuid())
+  label String
+  href  String
+  icon  String
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FooterBrand {
+  id    String @id @default(cuid())
+  label String
+  href  String
+  kind  String @default("sponsor")
+  badgeImage String @default("")
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ===================== SHARED CONTENT =====================
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  payload   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
