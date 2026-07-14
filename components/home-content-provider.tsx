@@ -141,6 +141,36 @@ const sectionToKey: Record<HomeSectionKey, keyof HomeContentState> = {
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+async function encodeContentPayload(payload: unknown) {
+  const text = JSON.stringify(payload);
+
+  if (typeof CompressionStream === "undefined" || text.length < 2000) {
+    return {
+      body: text,
+      headers: { "Content-Type": "application/json" } as HeadersInit
+    };
+  }
+
+  try {
+    const stream = new Blob([text], { type: "application/json" })
+      .stream()
+      .pipeThrough(new CompressionStream("gzip"));
+
+    return {
+      body: await new Response(stream).arrayBuffer(),
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Encoding": "gzip"
+      } as HeadersInit
+    };
+  } catch {
+    return {
+      body: text,
+      headers: { "Content-Type": "application/json" } as HeadersInit
+    };
+  }
+}
+
 export function HomeContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<HomeContentState>(defaultHomeContent);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -203,12 +233,12 @@ export function HomeContentProvider({ children }: { children: ReactNode }) {
     setSaveStatus("saving");
 
     try {
+      const payload = normalizeHomeContent(content);
+      const { body, headers } = await encodeContentPayload(payload);
       const response = await fetch("/api/content", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(normalizeHomeContent(content))
+        headers,
+        body
       });
 
       if (!response.ok) {

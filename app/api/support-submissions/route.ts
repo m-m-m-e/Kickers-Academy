@@ -1,47 +1,43 @@
-import { NextResponse } from "next/server";
-import { loadContentStore, saveContentStore } from "@/lib/content-store";
-import type { SupportSubmission } from "@/lib/home-content";
+// app/api/support-submissions/route.ts
+import { NextResponse, type NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAdminSession } from "@/lib/require-admin-session";
 
-function clean(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+const PAGE_SIZE = 20;
+
+export async function GET(request: NextRequest) {
+  const session = requireAdminSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(0, Number(searchParams.get("page") ?? 0));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? PAGE_SIZE)));
+
+  const [items, total] = await Promise.all([
+    prisma.supportSubmission.findMany({ orderBy: { submittedAt: "desc" }, skip: page * pageSize, take: pageSize }),
+    prisma.supportSubmission.count()
+  ]);
+
+  return NextResponse.json({ items, total, page, pageSize });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<SupportSubmission>;
-    const name = clean(body.name);
-    const email = clean(body.email);
-    const supportType = clean(body.supportType);
-
-    if (!name || !email || !supportType) {
-      return NextResponse.json(
-        { error: "Please provide your name, email, and the support option you prefer." },
-        { status: 400 }
-      );
-    }
-
-    const content = await loadContentStore();
-    const submission: SupportSubmission = {
-      id: `support-${Date.now()}`,
-      name,
-      email,
-      phone: clean(body.phone),
-      supportType,
-      supportDetails: clean(body.supportDetails),
-      preferredPaymentStream: clean(body.preferredPaymentStream) || "To be discussed",
-      amount: clean(body.amount),
-      status: "new",
-      submittedAt: new Date().toISOString(),
-      adminNote: ""
-    };
-
-    const saved = await saveContentStore({
-      ...content,
-      supportSubmissions: [submission, ...content.supportSubmissions]
+    const body = await request.json();
+    const created = await prisma.supportSubmission.create({
+      data: {
+        name: body.name ?? "",
+        email: body.email ?? "",
+        phone: body.phone ?? "",
+        supportType: body.supportType ?? "",
+        supportDetails: body.supportDetails ?? "",
+        preferredPaymentStream: body.preferredPaymentStream ?? "",
+        amount: body.amount ?? ""
+      }
     });
-
-    return NextResponse.json({ submission, total: saved.supportSubmissions.length });
-  } catch {
-    return NextResponse.json({ error: "Unable to save your support request right now." }, { status: 500 });
+    return NextResponse.json({ ok: true, submission: created });
+  } catch (error) {
+    console.error("Failed to create support submission:", error);
+    return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });
   }
 }

@@ -199,3 +199,152 @@ model SiteContent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ===================== JOIN MODULE =====================
+
+model JoinRegistration {
+  id                      String    @id @default(cuid())
+  playerName              String
+  dateOfBirth             String
+  guardianName            String
+  guardianEmail           String
+  guardianPhone           String
+  emergencyContact        String
+  address                 String    @default("")
+  residence               String    @default("")
+  medicalInformation      String    @default("")
+  consent                 Boolean   @default(false)
+  photoPublicationConsent String    @default("denied")
+  status                  String    @default("pending")
+  submittedAt             DateTime  @default(now())
+  reviewedAt              DateTime?
+  adminNote               String    @default("")
+  whatsappConfirmedAt     DateTime?
+  emailConfirmedAt        DateTime?
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+// ===================== CONTACT MODULE =====================
+
+model ContactSubmission {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String   @default("")
+  subject     String
+  message     String
+  status      String   @default("new")
+  submittedAt DateTime @default(now())
+  adminNote   String   @default("")
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model FeedbackSubmission {
+  id          String    @id @default(cuid())
+  name        String
+  message     String
+  rating      Int       @default(5)
+  status      String    @default("pending")
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  adminNote   String    @default("")
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+// ===================== ENGAGE MODULE =====================
+
+model EngageSubmission {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  phone          String   @default("")
+  engagementType String
+  occupation     String   @default("")
+  skills         String   @default("")
+  message        String
+  status         String   @default("new")
+  submittedAt    DateTime @default(now())
+  adminNote      String   @default("")
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model EngageConnectionRequest {
+  id                   String   @id @default(cuid())
+  targetSubmissionId   String   @default("")
+  targetOccupation     String   @default("")
+  targetEngagementType String   @default("")
+  requesterName        String
+  requesterEmail       String
+  requesterPhone       String   @default("")
+  reason               String
+  status               String   @default("new")
+  submittedAt          DateTime @default(now())
+  adminNote            String   @default("")
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model SupportSubmission {
+  id                     String   @id @default(cuid())
+  name                   String
+  email                  String
+  phone                  String   @default("")
+  supportType            String
+  supportDetails         String   @default("")
+  preferredPaymentStream String   @default("")
+  amount                 String   @default("")
+  status                 String   @default("new")
+  submittedAt            DateTime @default(now())
+  adminNote              String   @default("")
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+// ===================== STORE ORDERS MODULE =====================
+
+model StoreOrder {
+  id                 String          @id @default(cuid())
+  buyerName          String
+  buyerEmail         String
+  buyerPhone         String          @default("")
+  deliveryPreference String          @default("")
+  notes              String          @default("")
+  items              StoreOrderItem[]
+  status             String          @default("new")
+  submittedAt        DateTime        @default(now())
+  adminNote          String          @default("")
+
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model StoreOrderItem {
+  id                 String     @id @default(cuid())
+  orderId            String
+  order              StoreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId          String
+  productTitle       String
+  productImage       String     @default("")
+  basePrice          String     @default("")
+  customizationPrice String     @default("")
+  unitPrice          String     @default("")
+  lineTotal          String     @default("")
+  color              String     @default("")
+  size               String     @default("")
+  quantity           Int        @default(1)
+  name               String     @default("")
+  number             String     @default("")
+  customMade         Boolean    @default(false)
+
+  @@index([orderId])
+}

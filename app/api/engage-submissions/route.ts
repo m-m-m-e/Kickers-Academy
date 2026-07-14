@@ -1,49 +1,43 @@
-import { NextResponse } from "next/server";
-import { loadContentStore, saveContentStore } from "@/lib/content-store";
-import type { EngageSubmission } from "@/lib/home-content";
+// app/api/engage-submissions/route.ts
+import { NextResponse, type NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAdminSession } from "@/lib/require-admin-session";
 
-function clean(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+const PAGE_SIZE = 20;
+
+export async function GET(request: NextRequest) {
+  const session = requireAdminSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(0, Number(searchParams.get("page") ?? 0));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? PAGE_SIZE)));
+
+  const [items, total] = await Promise.all([
+    prisma.engageSubmission.findMany({ orderBy: { submittedAt: "desc" }, skip: page * pageSize, take: pageSize }),
+    prisma.engageSubmission.count()
+  ]);
+
+  return NextResponse.json({ items, total, page, pageSize });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<EngageSubmission>;
-    const name = clean(body.name);
-    const email = clean(body.email);
-    const engagementType = clean(body.engagementType);
-    const skills = clean(body.skills);
-    const message = clean(body.message);
-
-    if (!name || !email || !engagementType || (!skills && !message)) {
-      return NextResponse.json(
-        { error: "Please provide your name, email, engagement type, and either skills or a message." },
-        { status: 400 }
-      );
-    }
-
-    const content = await loadContentStore();
-    const submission: EngageSubmission = {
-      id: `engage-${Date.now()}`,
-      name,
-      email,
-      phone: clean(body.phone),
-      engagementType,
-      occupation: clean(body.occupation),
-      skills,
-      message,
-      status: "new",
-      submittedAt: new Date().toISOString(),
-      adminNote: ""
-    };
-
-    const saved = await saveContentStore({
-      ...content,
-      engageSubmissions: [submission, ...content.engageSubmissions]
+    const body = await request.json();
+    const created = await prisma.engageSubmission.create({
+      data: {
+        name: body.name ?? "",
+        email: body.email ?? "",
+        phone: body.phone ?? "",
+        engagementType: body.engagementType ?? "",
+        occupation: body.occupation ?? "",
+        skills: body.skills ?? "",
+        message: body.message ?? ""
+      }
     });
-
-    return NextResponse.json({ submission, total: saved.engageSubmissions.length });
-  } catch {
-    return NextResponse.json({ error: "Unable to save your engagement message right now." }, { status: 500 });
+    return NextResponse.json({ ok: true, submission: created });
+  } catch (error) {
+    console.error("Failed to create engage submission:", error);
+    return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });
   }
 }

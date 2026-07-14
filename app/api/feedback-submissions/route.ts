@@ -1,49 +1,36 @@
-import { NextResponse } from "next/server";
-import { loadContentStore, saveContentStore } from "@/lib/content-store";
-import type { FeedbackSubmission } from "@/lib/home-content";
+// app/api/feedback-submissions/route.ts
+import { NextResponse, type NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAdminSession } from "@/lib/require-admin-session";
 
-function clean(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+const PAGE_SIZE = 20;
+
+export async function GET(request: NextRequest) {
+  const session = requireAdminSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(0, Number(searchParams.get("page") ?? 0));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? PAGE_SIZE)));
+
+  const [items, total] = await Promise.all([
+    prisma.feedbackSubmission.findMany({ orderBy: { submittedAt: "desc" }, skip: page * pageSize, take: pageSize }),
+    prisma.feedbackSubmission.count()
+  ]);
+
+  return NextResponse.json({ items, total, page, pageSize });
 }
 
-function parseRating(value: unknown) {
-  const rating = Number(value);
-  if (!Number.isFinite(rating)) return 0;
-  return Math.max(1, Math.min(5, Math.round(rating)));
-}
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const message = clean(body.message);
-    const rating = parseRating(body.rating);
-    const name = clean(body.name);
-
-    if (!message || rating < 1) {
-      return NextResponse.json(
-        { error: "Please provide your feedback and a rating from 1 to 5." },
-        { status: 400 }
-      );
-    }
-
-    const content = await loadContentStore();
-    const feedback: FeedbackSubmission = {
-      id: `feedback-${Date.now()}`,
-      name,
-      message,
-      rating,
-      status: "pending",
-      submittedAt: new Date().toISOString(),
-      adminNote: ""
-    };
-
-    const saved = await saveContentStore({
-      ...content,
-      feedbackSubmissions: [feedback, ...content.feedbackSubmissions]
+    const rating = Number.isFinite(body.rating) ? Math.min(5, Math.max(1, Math.round(body.rating))) : 5;
+    const created = await prisma.feedbackSubmission.create({
+      data: { name: body.name ?? "", message: body.message ?? "", rating }
     });
-
-    return NextResponse.json({ ok: true, feedback, total: saved.feedbackSubmissions.length }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Unable to save your feedback right now." }, { status: 500 });
+    return NextResponse.json({ ok: true, submission: created });
+  } catch (error) {
+    console.error("Failed to create feedback submission:", error);
+    return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { gunzipSync } from "node:zlib";
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminSession } from "@/lib/admin-auth";
@@ -158,6 +159,18 @@ async function loadLegacyContent(): Promise<HomeContentState> {
   });
 }
 
+async function parseRequestBody(request: NextRequest): Promise<HomeContentState> {
+  const contentEncoding = request.headers.get("content-encoding")?.toLowerCase();
+  const raw = Buffer.from(await request.arrayBuffer());
+
+  if (contentEncoding?.includes("gzip")) {
+    const text = gunzipSync(raw).toString("utf8");
+    return JSON.parse(text) as HomeContentState;
+  }
+
+  return JSON.parse(raw.toString("utf8")) as HomeContentState;
+}
+
 async function loadStoredContent(): Promise<HomeContentState | null> {
   const row = await loadSiteContentRow(CONTENT_KEY);
 
@@ -213,7 +226,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as HomeContentState;
+    const body = await parseRequestBody(request);
     const saved = await saveStoredContent(body);
 
     return NextResponse.json({ ok: true, content: saved });

@@ -1,4 +1,4 @@
-// app/api/contact-submissions/route.ts
+// app/api/engage-requests/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin-session";
@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? PAGE_SIZE)));
 
   const [items, total] = await Promise.all([
-    prisma.contactSubmission.findMany({ orderBy: { submittedAt: "desc" }, skip: page * pageSize, take: pageSize }),
-    prisma.contactSubmission.count()
+    prisma.engageConnectionRequest.findMany({ orderBy: { submittedAt: "desc" }, skip: page * pageSize, take: pageSize }),
+    prisma.engageConnectionRequest.count()
   ]);
 
   return NextResponse.json({ items, total, page, pageSize });
@@ -24,18 +24,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const created = await prisma.contactSubmission.create({
+    const created = await prisma.engageConnectionRequest.create({
       data: {
-        name: body.name ?? "",
-        email: body.email ?? "",
-        phone: body.phone ?? "",
-        subject: body.subject ?? "",
-        message: body.message ?? ""
+        targetSubmissionId: body.targetSubmissionId ?? "",
+        targetOccupation: body.targetOccupation ?? "",
+        targetEngagementType: body.targetEngagementType ?? "",
+        requesterName: body.requesterName ?? "",
+        requesterEmail: body.requesterEmail ?? "",
+        requesterPhone: body.requesterPhone ?? "",
+        reason: body.reason ?? ""
       }
     });
-    return NextResponse.json({ ok: true, submission: created });
+    return NextResponse.json({ ok: true, request: created });
   } catch (error) {
-    console.error("Failed to create contact submission:", error);
-    return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });
+    console.error("Failed to create connection request:", error);
+    return NextResponse.json({ error: "Failed to create request" }, { status: 500 });
   }
 }
