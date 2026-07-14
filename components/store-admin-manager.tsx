@@ -4,15 +4,7 @@ import { useMemo, useState } from "react";
 import type { ImageContentItem, StoreCategory, StoreOrder, StoreProduct } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
-
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
+import { uploadImage } from "@/lib/admin-upload";
 
 const splitList = (value: string) =>
   value
@@ -71,8 +63,8 @@ export function StoreAdminManager() {
 
   const handleHeroFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateStoreHero({ ...content.storeHero, image: dataUrl });
+    const url = await uploadImage(file);
+    updateStoreHero({ ...content.storeHero, image: url });
   };
 
   const handleHeroRemove = () => {
@@ -86,8 +78,8 @@ export function StoreAdminManager() {
 
   const handleCategoryFile = async (file: File | null) => {
     if (!file || !selectedCategory) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateStoreCategory({ ...selectedCategory, image: dataUrl });
+    const url = await uploadImage(file);
+    updateStoreCategory({ ...selectedCategory, image: url });
   };
 
   const handleCategoryRemove = () => {
@@ -112,8 +104,8 @@ export function StoreAdminManager() {
 
   const handleProductFile = async (file: File | null, target: StoreProduct | null) => {
     if (!file || !selectedCategory || !target) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateStoreProduct(selectedCategory.id, { ...target, image: dataUrl });
+    const url = await uploadImage(file);
+    updateStoreProduct(selectedCategory.id, { ...target, image: url });
   };
 
   const handleProductRemove = (target: StoreProduct | null) => {

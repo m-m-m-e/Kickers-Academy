@@ -4,15 +4,7 @@ import { useMemo, useState } from "react";
 import type { ImageContentItem, ProgramMediaItem, ProgramsProgressionPathContent } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
-
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
+import { uploadImage } from "@/lib/admin-upload";
 
 export function ProgramsAdminManager() {
   const {
@@ -48,8 +40,8 @@ export function ProgramsAdminManager() {
 
   const handleHeroFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateProgramsHero({ ...content.programsHero, image: dataUrl });
+    const url = await uploadImage(file);
+    updateProgramsHero({ ...content.programsHero, image: url });
   };
 
   const handleHeroRemove = () => {
@@ -101,14 +93,14 @@ export function ProgramsAdminManager() {
 
   const handleProgressionFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    handleProgressionChange("teaserImage", dataUrl);
+    const url = await uploadImage(file);
+    handleProgressionChange("teaserImage", url);
   };
 
   const handleProgressionHeroFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    handleProgressionChange("heroImage", dataUrl);
+    const url = await uploadImage(file);
+    handleProgressionChange("heroImage", url);
   };
 
   const handleProgressionImageRemove = () => {
@@ -126,8 +118,8 @@ export function ProgramsAdminManager() {
 
   const handleGroupFile = async (file: File | null) => {
     if (!file || !selectedGroup) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateProgramGroup({ ...selectedGroup, image: dataUrl });
+    const url = await uploadImage(file);
+    updateProgramGroup({ ...selectedGroup, image: url });
   };
 
   const handleGroupRemove = () => {
@@ -170,20 +162,20 @@ export function ProgramsAdminManager() {
 
   const handleMediaSourceFile = async (item: ProgramMediaItem, file: File | null) => {
     if (!file || !selectedGroup) return;
-    const dataUrl = await uploadToDataUrl(file);
+    const url = await uploadImage(file);
     const mediaType = file.type.startsWith("video/") ? "video" : "image";
     updateProgramMediaItem(selectedGroup.id, {
       ...item,
       mediaType,
-      src: dataUrl,
-      thumbnail: mediaType === "image" ? dataUrl : item.thumbnail
+      src: url,
+      thumbnail: mediaType === "image" ? url : item.thumbnail
     });
   };
 
   const handleMediaThumbnailFile = async (item: ProgramMediaItem, file: File | null) => {
     if (!file || !selectedGroup) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateProgramMediaItem(selectedGroup.id, { ...item, thumbnail: dataUrl });
+    const url = await uploadImage(file);
+    updateProgramMediaItem(selectedGroup.id, { ...item, thumbnail: url });
   };
 
   const handleMediaDelete = (item: ProgramMediaItem) => {

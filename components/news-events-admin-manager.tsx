@@ -4,17 +4,10 @@ import { useMemo, useState } from "react";
 import type { ImageContentItem } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
+import { uploadImage } from "@/lib/admin-upload";
 
 const TABLE_PAGE_SIZE = 20;
 
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 export function NewsEventsAdminManager() {
   const {
@@ -40,8 +33,8 @@ export function NewsEventsAdminManager() {
 
   const handleHeroFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateNewsEventsHero({ ...content.newsEventsHero, image: dataUrl });
+    const url = await uploadImage(file);
+    updateNewsEventsHero({ ...content.newsEventsHero, image: url });
   };
 
   const handleHeroRemove = () => {
@@ -77,8 +70,8 @@ export function NewsEventsAdminManager() {
 
   const handleFile = async (file: File | null) => {
     if (!file || !selectedItem) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateSectionItem("newsEvents", { ...selectedItem, image: dataUrl } as ImageContentItem);
+    const url = await uploadImage(file);
+    updateSectionItem("newsEvents", { ...selectedItem, image: url } as ImageContentItem);
   };
 
   const handleItemRemove = () => {

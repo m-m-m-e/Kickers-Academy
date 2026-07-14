@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { createEmptyItem, type HomeSectionKey, type ImageContentItem } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
+import { uploadImage } from "@/lib/admin-upload";
 
 const sections: Array<{ key: HomeSectionKey; label: string }> = [
   { key: "hero", label: "Hero" },
@@ -25,14 +26,6 @@ const sectionLabels: Record<HomeSectionKey, string> = {
   actions: "Join, Engage, Contact Us"
 };
 
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 export function HomeAdminManager() {
   const { content, addSectionItem, updateSectionItem, deleteSectionItem } = useHomeContent();
@@ -63,8 +56,8 @@ export function HomeAdminManager() {
     if (!file) {
       return;
     }
-    const dataUrl = await uploadToDataUrl(file);
-    updateSectionItem(activeSection, { ...item, image: dataUrl });
+    const url = await uploadImage(file);
+    updateSectionItem(activeSection, { ...item, image: url });
   };
 
   const handleRemove = (item: ImageContentItem) => {

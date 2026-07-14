@@ -5,15 +5,7 @@ import Link from "next/link";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
 import { getAdminNotifications } from "@/lib/admin-notifications";
-
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
+import { uploadMedia } from "@/lib/admin-upload";
 
 export default function AdminNotificationsPage() {
   const { content, updateNotificationSettings } = useHomeContent();
@@ -22,7 +14,7 @@ export default function AdminNotificationsPage() {
 
   const uploadTone = async (file: File | null) => {
     if (!file) return;
-    const toneUrl = await uploadToDataUrl(file);
+    const toneUrl = await uploadMedia(file);
     updateNotificationSettings({
       ...settings,
       toneUrl,

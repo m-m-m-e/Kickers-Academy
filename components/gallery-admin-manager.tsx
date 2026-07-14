@@ -4,17 +4,9 @@ import { useMemo, useState } from "react";
 import type { GalleryCategory, GalleryMediaItem, ImageContentItem } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
+import { uploadImage } from "@/lib/admin-upload";
 
 const TABLE_PAGE_SIZE = 20;
-
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 function makeMediaTitle(file: File) {
   return file.name.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim() || "Gallery Media";
@@ -50,8 +42,8 @@ export function GalleryAdminManager() {
 
   const handleHeroFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateGalleryHero({ ...content.galleryHero, image: dataUrl });
+    const url = await uploadImage(file);
+    updateGalleryHero({ ...content.galleryHero, image: url });
   };
 
   const handleHeroRemove = () => {
@@ -65,8 +57,8 @@ export function GalleryAdminManager() {
 
   const handleCategoryFile = async (file: File | null) => {
     if (!file || !selectedCategory) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateGalleryCategory({ ...selectedCategory, image: dataUrl });
+    const url = await uploadImage(file);
+    updateGalleryCategory({ ...selectedCategory, image: url });
   };
 
   const handleCategoryRemove = () => {
@@ -93,8 +85,8 @@ export function GalleryAdminManager() {
 
   const handleMediaFile = async (file: File | null, target: GalleryMediaItem | null) => {
     if (!file || !selectedCategory || !target) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateGalleryMediaItem(selectedCategory.id, { ...target, src: dataUrl, thumbnail: dataUrl });
+    const url = await uploadImage(file);
+    updateGalleryMediaItem(selectedCategory.id, { ...target, src: url, thumbnail: url });
   };
 
   const handleMediaRemove = (target: GalleryMediaItem | null) => {
@@ -108,15 +100,15 @@ export function GalleryAdminManager() {
     const mediaFiles = Array.from(files).filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"));
 
     for (const file of mediaFiles) {
-      const dataUrl = await uploadToDataUrl(file);
+      const url = await uploadImage(file);
       const mediaType = file.type.startsWith("video/") ? "video" : "image";
       addGalleryMediaItem(selectedCategory.id, {
         id: `gallery-folder-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         title: makeMediaTitle(file),
         description: `Uploaded from folder: ${(file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name}`,
         mediaType,
-        src: dataUrl,
-        thumbnail: mediaType === "image" ? dataUrl : ""
+        src: url,
+        thumbnail: mediaType === "image" ? url : ""
       });
     }
     setMediaTablePage(0);

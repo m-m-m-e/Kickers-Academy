@@ -19,6 +19,7 @@ import type {
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
 import { buildMapEmbedUrl } from "@/lib/map-url";
+import { uploadImage } from "@/lib/admin-upload";
 
 type PageKind = "join" | "contact" | "donate";
 const TABLE_PAGE_SIZE = 20;
@@ -33,21 +34,13 @@ function renderStars(rating: number) {
   ));
 }
 
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
-
-function uploadImageToPage(
+async function uploadImageToPage(
   file: File | null,
   apply: (image: string) => void
 ) {
   if (!file) return;
-  return uploadToDataUrl(file).then(apply);
+  const url = await uploadImage(file);
+  apply(url);
 }
 
 async function uploadDocumentFile(file: File) {
@@ -154,7 +147,7 @@ export function PublicPageAdminManager({ kind }: { kind: PageKind }) {
 
   const updateHero = async (file: File | null) => {
     if (!file) return;
-    const image = await uploadToDataUrl(file);
+    const image = await uploadImage(file);
     updatePage({ ...page, hero: { ...page.hero, image } } as typeof page);
   };
 
@@ -1942,7 +1935,7 @@ export function PublicPageAdminManager({ kind }: { kind: PageKind }) {
                         onChange={async (event) => {
                           const file = event.target.files?.[0] ?? null;
                           if (!file) return;
-                          const image = await uploadToDataUrl(file);
+                          const image = await uploadImage(file);
                           const gratitudeCards = [...donatePage.gratitudeCards];
                           gratitudeCards[index] = { ...card, image };
                           updatePage({ ...donatePage, gratitudeCards });

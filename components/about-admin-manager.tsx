@@ -4,15 +4,8 @@ import { useMemo, useState } from "react";
 import type { AboutCoach, ImageContentItem } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
+import { uploadImage } from "@/lib/admin-upload";
 
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 export function AboutAdminManager() {
   const {
@@ -54,8 +47,8 @@ export function AboutAdminManager() {
 
   const handleFile = async (item: ImageContentItem, file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateAboutSection({ ...item, image: dataUrl });
+    const url = await uploadImage(file);
+    updateAboutSection({ ...item, image: url });
   };
 
   const handleHeroChange = (field: keyof ImageContentItem, value: string) => {
@@ -69,8 +62,8 @@ export function AboutAdminManager() {
     if (!file || !heroItem) {
       return;
     }
-    const dataUrl = await uploadToDataUrl(file);
-    updateAboutHero({ ...heroItem, image: dataUrl });
+    const url = await uploadImage(file);
+    updateAboutHero({ ...heroItem, image: url });
   };
 
   const handleHeroRemove = () => {
@@ -111,8 +104,8 @@ export function AboutAdminManager() {
 
   const handleCoachFile = async (coach: AboutCoach, file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateAboutCoach({ ...coach, image: dataUrl });
+    const url = await uploadImage(file);
+    updateAboutCoach({ ...coach, image: url });
   };
 
   const handleCoachIconsChange = (coach: AboutCoach, value: string) => {

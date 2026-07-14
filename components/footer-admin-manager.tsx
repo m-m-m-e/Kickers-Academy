@@ -4,18 +4,10 @@ import { useMemo, useState } from "react";
 import type { FooterBrandItem, FooterContent, FooterIconItem, FooterLinkItem } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
+import { uploadImage } from "@/lib/admin-upload";
 
 const iconOptions: FooterIconItem["icon"][] = ["tiktok", "facebook", "instagram", "youtube", "whatsapp", "email"];
 const brandKinds: FooterBrandItem["kind"][] = ["sponsor", "partner"];
-
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 export function FooterAdminManager() {
   const {
@@ -57,8 +49,8 @@ export function FooterAdminManager() {
 
   const handleBadgeFile = async (file: File | null) => {
     if (!file) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateFooterContent({ ...footer, badgeImage: dataUrl } as FooterContent);
+    const url = await uploadImage(file);
+    updateFooterContent({ ...footer, badgeImage: url } as FooterContent);
   };
 
   const handleBadgeRemove = () => {
@@ -86,8 +78,8 @@ export function FooterAdminManager() {
 
   const handleBrandFile = async (file: File | null) => {
     if (!file || !selectedBrand) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateFooterBrandBadgeImage(selectedBrand.id, dataUrl);
+    const url = await uploadImage(file);
+    updateFooterBrandBadgeImage(selectedBrand.id, url);
   };
 
   return (

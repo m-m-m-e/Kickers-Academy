@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { ImageContentItem } from "@/lib/home-content";
 import { AdminSaveButton } from "@/components/admin-save-button";
 import { useHomeContent } from "@/components/home-content-provider";
+import { uploadImage } from "@/lib/admin-upload";
 
 type ActionCardKind = "join" | "donate" | "contact";
 
@@ -36,15 +37,6 @@ const config: Record<
   }
 };
 
-function uploadToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
-
 export function ActionCardAdminManager({ kind }: { kind: ActionCardKind }) {
   const { content, updateActionCard, updateActionCardImage } = useHomeContent();
   const settings = config[kind];
@@ -64,8 +56,8 @@ export function ActionCardAdminManager({ kind }: { kind: ActionCardKind }) {
 
   const handleFile = async (file: File | null) => {
     if (!file || !selectedItem) return;
-    const dataUrl = await uploadToDataUrl(file);
-    updateActionCardImage(selectedItem.id, dataUrl);
+    const url = await uploadImage(file);
+    updateActionCardImage(selectedItem.id, url);
   };
 
   return (
