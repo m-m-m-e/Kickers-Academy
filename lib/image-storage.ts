@@ -42,6 +42,13 @@ export async function storeImage(file: File, originalName: string): Promise<Imag
   const storedName = `${Date.now()}-${randomUUID()}-${safeName}`;
   const bytes = Buffer.from(await file.arrayBuffer());
   const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  const isServerless = Boolean(process.env.VERCEL);
+
+  if (!blobToken && isServerless) {
+    throw new Error(
+      "BLOB_READ_WRITE_TOKEN is required for image uploads in Vercel deployments because the public filesystem is read-only."
+    );
+  }
 
   if (blobToken) {
     const blob = await put(storedName, bytes, {
