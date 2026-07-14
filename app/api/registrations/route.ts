@@ -1,6 +1,8 @@
 // app/api/registrations/route.ts
 import { NextResponse, type NextRequest } from "next/server";
+import { loadContentStore, saveContentStore } from "@/lib/content-store";
 import { prisma } from "@/lib/prisma";
+import type { JoinRegistration, JoinRegistrationStatus } from "@/lib/home-content";
 import { requireAdminSession } from "@/lib/require-admin-session";
 
 const PAGE_SIZE = 20;
@@ -42,7 +44,34 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ ok: true, registration: created });
+    const registration: JoinRegistration = {
+      id: created.id,
+      playerName: created.playerName,
+      dateOfBirth: created.dateOfBirth,
+      guardianName: created.guardianName,
+      guardianEmail: created.guardianEmail,
+      guardianPhone: created.guardianPhone,
+      emergencyContact: created.emergencyContact,
+      address: created.address,
+      residence: created.residence,
+      medicalInformation: created.medicalInformation,
+      consent: created.consent,
+      photoPublicationConsent: created.photoPublicationConsent as "accepted" | "denied",
+      status: created.status as JoinRegistrationStatus,
+      submittedAt: created.submittedAt.toISOString(),
+      reviewedAt: created.reviewedAt?.toISOString(),
+      adminNote: created.adminNote ?? "",
+      whatsappConfirmedAt: created.whatsappConfirmedAt?.toISOString(),
+      emailConfirmedAt: created.emailConfirmedAt?.toISOString()
+    };
+
+    const content = await loadContentStore();
+    await saveContentStore({
+      ...content,
+      joinRegistrations: [registration, ...content.joinRegistrations]
+    });
+
+    return NextResponse.json({ ok: true, registration });
   } catch (error) {
     console.error("Failed to create registration:", error);
     return NextResponse.json({ error: "Failed to create registration" }, { status: 500 });

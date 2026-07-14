@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { loadContentStore, saveContentStore } from "@/lib/content-store";
+import { prisma } from "@/lib/prisma";
 import type { JoinRegistration, JoinRegistrationStatus } from "@/lib/home-content";
 
 function clean(value: unknown) {
@@ -15,22 +16,42 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    const created = await prisma.joinRegistration.create({
+      data: {
+        playerName: clean(body.playerName),
+        dateOfBirth: clean(body.dateOfBirth),
+        guardianName: clean(body.guardianName),
+        guardianEmail: clean(body.guardianEmail),
+        guardianPhone: clean(body.guardianPhone),
+        emergencyContact: clean(body.emergencyContact),
+        address: clean(body.address),
+        residence: clean(body.residence),
+        medicalInformation: clean(body.medicalInformation),
+        consent: Boolean(body.consent),
+        photoPublicationConsent: body.photoPublicationConsent === "accepted" ? "accepted" : "denied",
+        status: "pending"
+      }
+    });
+
     const registration: JoinRegistration = {
-      id: `join-registration-${Date.now()}`,
-      playerName: clean(body.playerName),
-      dateOfBirth: clean(body.dateOfBirth),
-      guardianName: clean(body.guardianName),
-      guardianEmail: clean(body.guardianEmail),
-      guardianPhone: clean(body.guardianPhone),
-      emergencyContact: clean(body.emergencyContact),
-      address: clean(body.address),
-      residence: clean(body.residence),
-      medicalInformation: clean(body.medicalInformation),
-      consent: Boolean(body.consent),
-      photoPublicationConsent: body.photoPublicationConsent === "accepted" ? "accepted" : "denied",
-      status: "pending",
-      submittedAt: new Date().toISOString(),
-      adminNote: ""
+      id: created.id,
+      playerName: created.playerName,
+      dateOfBirth: created.dateOfBirth,
+      guardianName: created.guardianName,
+      guardianEmail: created.guardianEmail,
+      guardianPhone: created.guardianPhone,
+      emergencyContact: created.emergencyContact,
+      address: created.address,
+      residence: created.residence,
+      medicalInformation: created.medicalInformation,
+      consent: created.consent,
+      photoPublicationConsent: created.photoPublicationConsent as "accepted" | "denied",
+      status: created.status as JoinRegistrationStatus,
+      submittedAt: created.submittedAt.toISOString(),
+      reviewedAt: created.reviewedAt?.toISOString(),
+      adminNote: created.adminNote ?? "",
+      whatsappConfirmedAt: created.whatsappConfirmedAt?.toISOString(),
+      emailConfirmedAt: created.emailConfirmedAt?.toISOString()
     };
 
     const requiredFields = [
