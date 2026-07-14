@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { HomeContentProvider } from "@/components/home-content-provider";
 
 export const metadata = {
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <HomeContentProvider>{children}</HomeContentProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
