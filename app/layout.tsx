@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import { HomeContentProvider } from "@/components/home-content-provider";
 
 export const metadata = {
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <HomeContentProvider>{children}</HomeContentProvider>
+        <Analytics />
       </body>
     </html>
   );
