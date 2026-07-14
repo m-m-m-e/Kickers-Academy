@@ -1,6 +1,8 @@
 // app/api/support-submissions/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { loadContentStore, saveContentStore } from "@/lib/content-store";
+import type { SupportSubmission, SupportSubmissionStatus } from "@/lib/home-content";
 import { requireAdminSession } from "@/lib/require-admin-session";
 
 const PAGE_SIZE = 20;
@@ -35,7 +37,28 @@ export async function POST(request: NextRequest) {
         amount: body.amount ?? ""
       }
     });
-    return NextResponse.json({ ok: true, submission: created });
+
+    const submission: SupportSubmission = {
+      id: created.id,
+      name: created.name,
+      email: created.email,
+      phone: created.phone,
+      supportType: created.supportType,
+      supportDetails: created.supportDetails,
+      preferredPaymentStream: created.preferredPaymentStream,
+      amount: created.amount,
+      status: (created.status as SupportSubmissionStatus | undefined) ?? "new",
+      submittedAt: created.submittedAt.toISOString(),
+      adminNote: created.adminNote ?? ""
+    };
+
+    const content = await loadContentStore();
+    await saveContentStore({
+      ...content,
+      supportSubmissions: [submission, ...content.supportSubmissions]
+    });
+
+    return NextResponse.json({ ok: true, submission });
   } catch (error) {
     console.error("Failed to create support submission:", error);
     return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });

@@ -1,6 +1,8 @@
 // app/api/contact-submissions/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { loadContentStore, saveContentStore } from "@/lib/content-store";
+import type { ContactSubmission, ContactSubmissionStatus } from "@/lib/home-content";
 import { requireAdminSession } from "@/lib/require-admin-session";
 
 const PAGE_SIZE = 20;
@@ -33,7 +35,26 @@ export async function POST(request: NextRequest) {
         message: body.message ?? ""
       }
     });
-    return NextResponse.json({ ok: true, submission: created });
+
+    const submission: ContactSubmission = {
+      id: created.id,
+      name: created.name,
+      email: created.email,
+      phone: created.phone,
+      subject: created.subject,
+      message: created.message,
+      status: (created.status as ContactSubmissionStatus | undefined) ?? "new",
+      submittedAt: created.submittedAt.toISOString(),
+      adminNote: created.adminNote ?? ""
+    };
+
+    const content = await loadContentStore();
+    await saveContentStore({
+      ...content,
+      contactSubmissions: [submission, ...content.contactSubmissions]
+    });
+
+    return NextResponse.json({ ok: true, submission });
   } catch (error) {
     console.error("Failed to create contact submission:", error);
     return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });

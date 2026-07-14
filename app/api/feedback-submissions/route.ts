@@ -1,6 +1,8 @@
 // app/api/feedback-submissions/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { loadContentStore, saveContentStore } from "@/lib/content-store";
+import type { FeedbackSubmission, FeedbackSubmissionStatus } from "@/lib/home-content";
 import { requireAdminSession } from "@/lib/require-admin-session";
 
 const PAGE_SIZE = 20;
@@ -28,7 +30,25 @@ export async function POST(request: NextRequest) {
     const created = await prisma.feedbackSubmission.create({
       data: { name: body.name ?? "", message: body.message ?? "", rating }
     });
-    return NextResponse.json({ ok: true, submission: created });
+
+    const submission: FeedbackSubmission = {
+      id: created.id,
+      name: created.name,
+      message: created.message,
+      rating: created.rating,
+      status: (created.status as FeedbackSubmissionStatus | undefined) ?? "pending",
+      submittedAt: created.submittedAt.toISOString(),
+      reviewedAt: created.reviewedAt?.toISOString(),
+      adminNote: created.adminNote ?? ""
+    };
+
+    const content = await loadContentStore();
+    await saveContentStore({
+      ...content,
+      feedbackSubmissions: [submission, ...content.feedbackSubmissions]
+    });
+
+    return NextResponse.json({ ok: true, submission });
   } catch (error) {
     console.error("Failed to create feedback submission:", error);
     return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });

@@ -18,7 +18,12 @@ async function loadLegacyContent(): Promise<HomeContentState> {
     footerContent,
     footerLinks,
     footerSocials,
-    footerBrands
+    footerBrands,
+    joinRegistrations,
+    contactSubmissions,
+    feedbackSubmissions,
+    engageSubmissions,
+    supportSubmissions
   ] = await Promise.all([
     prisma.heroSlide.findMany({ orderBy: { order: "asc" } }),
     prisma.aboutSection.findMany({ orderBy: { order: "asc" } }),
@@ -38,7 +43,12 @@ async function loadLegacyContent(): Promise<HomeContentState> {
     prisma.footerContent.findFirst(),
     prisma.footerLink.findMany({ orderBy: { order: "asc" } }),
     prisma.footerSocial.findMany({ orderBy: { order: "asc" } }),
-    prisma.footerBrand.findMany({ orderBy: { order: "asc" } })
+    prisma.footerBrand.findMany({ orderBy: { order: "asc" } }),
+    prisma.joinRegistration.findMany({ orderBy: { submittedAt: "desc" } }),
+    prisma.contactSubmission.findMany({ orderBy: { submittedAt: "desc" } }),
+    prisma.feedbackSubmission.findMany({ orderBy: { submittedAt: "desc" } }),
+    prisma.engageSubmission.findMany({ orderBy: { submittedAt: "desc" } }),
+    prisma.supportSubmission.findMany({ orderBy: { submittedAt: "desc" } })
   ]);
 
   return normalizeHomeContent({
@@ -155,7 +165,74 @@ async function loadLegacyContent(): Promise<HomeContentState> {
             socials: []
           }))
         }
-      : defaultHomeContent.footerContent
+      : defaultHomeContent.footerContent,
+    joinRegistrations: joinRegistrations.map((item) => ({
+      id: item.id,
+      playerName: item.playerName,
+      dateOfBirth: item.dateOfBirth,
+      guardianName: item.guardianName,
+      guardianEmail: item.guardianEmail,
+      guardianPhone: item.guardianPhone,
+      emergencyContact: item.emergencyContact,
+      address: item.address,
+      residence: item.residence,
+      medicalInformation: item.medicalInformation,
+      consent: item.consent,
+      photoPublicationConsent: item.photoPublicationConsent as "accepted" | "denied",
+      status: item.status as "pending" | "approved" | "rejected" | "deleted",
+      submittedAt: item.submittedAt.toISOString(),
+      reviewedAt: item.reviewedAt?.toISOString(),
+      adminNote: item.adminNote ?? "",
+      whatsappConfirmedAt: item.whatsappConfirmedAt?.toISOString(),
+      emailConfirmedAt: item.emailConfirmedAt?.toISOString()
+    })),
+    contactSubmissions: contactSubmissions.map((item) => ({
+      id: item.id,
+      name: item.name,
+      email: item.email,
+      phone: item.phone,
+      subject: item.subject,
+      message: item.message,
+      status: item.status as "new" | "read" | "archived",
+      submittedAt: item.submittedAt.toISOString(),
+      adminNote: item.adminNote ?? ""
+    })),
+    feedbackSubmissions: feedbackSubmissions.map((item) => ({
+      id: item.id,
+      name: item.name,
+      message: item.message,
+      rating: item.rating,
+      status: item.status as "pending" | "approved" | "rejected",
+      submittedAt: item.submittedAt.toISOString(),
+      reviewedAt: item.reviewedAt?.toISOString(),
+      adminNote: item.adminNote ?? ""
+    })),
+    engageSubmissions: engageSubmissions.map((item) => ({
+      id: item.id,
+      name: item.name,
+      email: item.email,
+      phone: item.phone,
+      engagementType: item.engagementType,
+      occupation: item.occupation,
+      skills: item.skills,
+      message: item.message,
+      status: item.status as "new" | "contacted" | "approved" | "archived",
+      submittedAt: item.submittedAt.toISOString(),
+      adminNote: item.adminNote ?? ""
+    })),
+    supportSubmissions: supportSubmissions.map((item) => ({
+      id: item.id,
+      name: item.name,
+      email: item.email,
+      phone: item.phone,
+      supportType: item.supportType,
+      supportDetails: item.supportDetails,
+      preferredPaymentStream: item.preferredPaymentStream,
+      amount: item.amount,
+      status: item.status as "new" | "contacted" | "fulfilled" | "archived",
+      submittedAt: item.submittedAt.toISOString(),
+      adminNote: item.adminNote ?? ""
+    }))
   });
 }
 
