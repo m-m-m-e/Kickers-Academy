@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import nodemailer from "nodemailer";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { defaultHomeContent, normalizeHomeContent, type HomeContentState, type JoinPageContent, type JoinRegistration } from "@/lib/home-content";
 import { loadSiteContentRow, saveSiteContentRow } from "@/lib/site-content-store";
@@ -163,6 +164,35 @@ function isPublicMailbox(email: string) {
   return ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "aol.com"].includes(domain);
 }
 
+async function sendMailWithSmtp({ fromEmail, toEmail, subject, text, html }: { fromEmail: string; toEmail: string; subject: string; text: string; html: string }) {
+  const host = process.env.SMTP_HOST?.trim();
+  const port = Number(process.env.SMTP_PORT || "587");
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+
+  if (!host || !user || !pass) {
+    throw new Error("SMTP credentials are not configured.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: {
+      user,
+      pass
+    }
+  });
+
+  return transporter.sendMail({
+    from: fromEmail,
+    to: toEmail,
+    subject,
+    text,
+    html
+  });
+}
+
 export async function POST(request: NextRequest) {
   const token = request.cookies.get("bru_admin_session")?.value;
   const session = verifyAdminSession(token);
@@ -171,11 +201,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const smtpUser = process.env.SMTP_USER?.trim();
 
-  if (!apiKey) {
+  if (!smtpUser) {
     return NextResponse.json(
-      { error: "Email service is not configured. Add RESEND_API_KEY to the environment first." },
+      { error: "Email service is not configured. Add SMTP_USER to the environment first." },
       { status: 503 }
     );
   }
@@ -200,43 +230,26 @@ export async function POST(request: NextRequest) {
     }
 
     const configuredFrom = process.env.EMAIL_FROM?.trim() || "";
-    const fallbackFrom = content.footerContent.email || "onboarding@resend.dev";
+    const fallbackFrom = content.footerContent.email || smtpUser;
     const fromEmail = configuredFrom || fallbackFrom;
-
-    if (isPublicMailbox(fromEmail)) {
-      return NextResponse.json(
-        {
-          error:
-            "Resend cannot send from Gmail, Yahoo, Outlook, or other public mailbox domains. Set EMAIL_FROM to an address on a verified Resend domain, for example no-reply@yourdomain.com."
-        },
-        { status: 400 }
-      );
-    }
 
     const message = makeConfirmationMessage(registration, content.joinPage);
     const subject = (content.joinPage.emailSubject || "Registration confirmed for {playerName}").replace(
       "{playerName}",
       registration.playerName
     );
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: `${content.footerContent.brandName || "Kickers Academy"} <${fromEmail}>`,
-        to: [registration.guardianEmail],
-        reply_to: content.footerContent.email,
+
+    try {
+      await sendMailWithSmtp({
+        fromEmail: `${content.footerContent.brandName || "Kickers Academy"} <${fromEmail}>`,
+        toEmail: registration.guardianEmail,
         subject,
         text: message,
         html: makeEmailHtml(content, registration, message)
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json({ error: errorText || "Email provider rejected the message." }, { status: 502 });
+      });
+    } catch (error) {
+      console.error("Failed to send registration email via SMTP:", error);
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Email provider rejected the message." }, { status: 502 });
     }
 
     const now = new Date().toISOString();
